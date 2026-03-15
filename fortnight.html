@@ -56,8 +56,6 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-camera.position.set(0,2,10)
-
 let sun = new THREE.DirectionalLight(0xffffff,1)
 sun.position.set(50,100,50)
 scene.add(sun)
@@ -71,6 +69,16 @@ let groundMat = new THREE.MeshLambertMaterial({color:0x228B22})
 let ground = new THREE.Mesh(groundGeo,groundMat)
 ground.rotation.x = -Math.PI/2
 scene.add(ground)
+
+let player = new THREE.Object3D()
+let pitchObject = new THREE.Object3D()
+
+pitchObject.add(camera)
+player.add(pitchObject)
+
+scene.add(player)
+
+player.position.set(0,2,10)
 
 function createHouse(x,z){
 
@@ -146,7 +154,6 @@ let running=false
 document.addEventListener("keydown",e=>{
 keys[e.key]=true
 if(e.key==="Shift") running=true
-  
 })
 
 document.addEventListener("keyup",e=>{
@@ -158,12 +165,12 @@ document.addEventListener("mousemove",(event)=>{
 
 if(document.pointerLockElement===document.body){
 
-camera.rotation.y -= event.movementX * 0.002
-camera.rotation.x -= event.movementY * 0.002
+player.rotation.y -= event.movementX * 0.002
 
-// stop camera from flipping underground
-let maxLook = Math.PI / 2.2
-camera.rotation.x = Math.max(-maxLook, Math.min(maxLook, camera.rotation.x))
+pitchObject.rotation.x -= event.movementY * 0.002
+
+let maxLook = Math.PI/2 - 0.1
+pitchObject.rotation.x = Math.max(-maxLook, Math.min(maxLook, pitchObject.rotation.x))
 
 }
 
@@ -175,12 +182,12 @@ requestAnimationFrame(animate)
 
 let speed = running ? 0.45 : 0.2
 
-if(keys["w"]) camera.translateZ(-speed)
-if(keys["s"]) camera.translateZ(speed)
-if(keys["a"]) camera.translateX(-speed)
-if(keys["d"]) camera.translateX(speed)
+if(keys["w"]) player.translateZ(-speed)
+if(keys["s"]) player.translateZ(speed)
+if(keys["a"]) player.translateX(-speed)
+if(keys["d"]) player.translateX(speed)
 
-camera.position.y = 2
+player.position.y = 2
 
 bullets.forEach(b=>{
 
