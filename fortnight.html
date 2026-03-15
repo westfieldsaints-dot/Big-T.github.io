@@ -138,10 +138,16 @@ new THREE.SphereGeometry(0.2),
 new THREE.MeshBasicMaterial({color:0xffff00})
 )
 
-bullet.position.copy(camera.position)
+// direction camera is looking
+let dir = new THREE.Vector3()
+camera.getWorldDirection(dir)
 
-bullet.velocity=new THREE.Vector3()
-camera.getWorldDirection(bullet.velocity)
+// spawn bullet slightly in front of camera (like from hands)
+bullet.position.copy(camera.position)
+bullet.position.add(dir.clone().multiplyScalar(1))
+bullet.position.y -= 0.3
+
+bullet.velocity = dir.clone()
 
 scene.add(bullet)
 bullets.push(bullet)
@@ -192,6 +198,8 @@ player.position.y = 2
 bullets.forEach(b=>{
 
 b.position.add(b.velocity.clone().multiplyScalar(0.8))
+
+if(b.position.y < 0) return
 
 enemies.forEach((enemy,i)=>{
 
