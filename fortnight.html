@@ -7,6 +7,7 @@
 body{
 margin:0;
 overflow:hidden;
+cursor:none;
 }
 
 #crosshair{
@@ -35,7 +36,7 @@ font-family:Arial;
 <body>
 
 <div id="crosshair"></div>
-<div id="info">Click screen • WASD move • Mouse look • Click shoot</div>
+<div id="info">Click screen • WASD move • SHIFT run • Mouse look • Click shoot</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
@@ -122,6 +123,8 @@ let bullets=[]
 
 document.addEventListener("click",()=>{
 
+document.body.requestPointerLock()
+
 let bullet=new THREE.Mesh(
 new THREE.SphereGeometry(0.2),
 new THREE.MeshBasicMaterial({color:0xffff00})
@@ -138,14 +141,26 @@ bullets.push(bullet)
 })
 
 let keys={}
+let running=false
 
-document.addEventListener("keydown",e=>keys[e.key]=true)
-document.addEventListener("keyup",e=>keys[e.key]=false)
+document.addEventListener("keydown",e=>{
+keys[e.key]=true
+if(e.key==="Shift") running=true
+})
+
+document.addEventListener("keyup",e=>{
+keys[e.key]=false
+if(e.key==="Shift") running=false
+})
 
 document.addEventListener("mousemove",(event)=>{
 
+if(document.pointerLockElement===document.body){
+
 camera.rotation.y -= event.movementX * 0.002
 camera.rotation.x -= event.movementY * 0.002
+
+}
 
 })
 
@@ -153,12 +168,14 @@ function animate(){
 
 requestAnimationFrame(animate)
 
-let speed=0.2
+let speed = running ? 0.45 : 0.2
 
 if(keys["w"]) camera.translateZ(-speed)
 if(keys["s"]) camera.translateZ(speed)
 if(keys["a"]) camera.translateX(-speed)
 if(keys["d"]) camera.translateX(speed)
+
+camera.position.y = 2
 
 bullets.forEach(b=>{
 
