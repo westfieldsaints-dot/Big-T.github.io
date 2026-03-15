@@ -8,10 +8,24 @@
 body{
 margin:0;
 background:black;
-overflow:hidden;
-font-family:Arial;
 color:white;
+font-family:Arial;
+overflow:hidden;
 text-align:center;
+}
+
+#menu{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+}
+
+button{
+font-size:20px;
+margin:10px;
+padding:10px 20px;
+cursor:pointer;
 }
 
 #player{
@@ -40,33 +54,47 @@ font-size:22px;
 display:none;
 }
 
-#menu{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-}
+/* hamburger menu */
 
-button{
-font-size:20px;
-margin:10px;
-padding:10px 20px;
+#hamburger{
+position:absolute;
+top:15px;
+right:20px;
+font-size:30px;
 cursor:pointer;
 }
 
-#gameover{
+#sideMenu{
 position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:40px;
-display:none;
+top:0;
+right:-200px;
+width:200px;
+height:100%;
+background:#111;
+padding-top:60px;
+transition:0.3s;
+}
+
+.menuItem{
+padding:15px;
+border-bottom:1px solid #333;
+cursor:pointer;
+}
+
+.menuItem:hover{
+background:#333;
 }
 
 </style>
 </head>
 
 <body>
+
+<div id="hamburger" onclick="toggleMenu()">☰</div>
+
+<div id="sideMenu">
+<div class="menuItem" onclick="startFortnight()">Fortnight</div>
+</div>
 
 <div id="menu">
 <h1>Select Difficulty</h1>
@@ -76,15 +104,12 @@ display:none;
 </div>
 
 <div id="score">Score: 0</div>
-<div id="gameover">GAME OVER<br>Refresh to play again</div>
 <div id="player"></div>
 
 <script>
 
 let player=document.getElementById("player")
 let scoreText=document.getElementById("score")
-let gameOverText=document.getElementById("gameover")
-let menu=document.getElementById("menu")
 
 let playerX=window.innerWidth/2
 let score=0
@@ -93,11 +118,21 @@ let spawnRate=800
 let difficultyIncrease=10
 let gameRunning=false
 
-player.style.left=playerX+"px"
+function toggleMenu(){
+
+let menu=document.getElementById("sideMenu")
+
+if(menu.style.right==="0px"){
+menu.style.right="-200px"
+}else{
+menu.style.right="0px"
+}
+
+}
 
 function startGame(level){
 
-menu.style.display="none"
+document.getElementById("menu").style.display="none"
 player.style.display="block"
 scoreText.style.display="block"
 
@@ -190,9 +225,8 @@ enemyRect.top<playerRect.bottom &&
 enemyRect.left<playerRect.right &&
 enemyRect.right>playerRect.left
 ){
-gameRunning=false
-gameOverText.style.display="block"
-clearInterval(fall)
+alert("Game Over! Score: "+score)
+location.reload()
 }
 
 if(y>window.innerHeight){
@@ -208,6 +242,14 @@ clearInterval(fall)
 }
 
 },30)
+
+}
+
+/* Fortnite-style game placeholder */
+
+function startFortnight(){
+
+alert("Fortnight 3D mode coming soon!")
 
 }
 
