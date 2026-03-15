@@ -11,6 +11,7 @@ background:black;
 overflow:hidden;
 font-family:Arial;
 color:white;
+text-align:center;
 }
 
 #player{
@@ -20,6 +21,7 @@ background:lime;
 position:absolute;
 bottom:40px;
 left:50%;
+display:none;
 }
 
 .enemy{
@@ -35,6 +37,21 @@ position:absolute;
 top:20px;
 left:20px;
 font-size:22px;
+display:none;
+}
+
+#menu{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+}
+
+button{
+font-size:20px;
+margin:10px;
+padding:10px 20px;
+cursor:pointer;
 }
 
 #gameover{
@@ -51,6 +68,13 @@ display:none;
 
 <body>
 
+<div id="menu">
+<h1>Select Difficulty</h1>
+<button onclick="startGame('easy')">Easy</button>
+<button onclick="startGame('medium')">Medium</button>
+<button onclick="startGame('hard')">Hard</button>
+</div>
+
 <div id="score">Score: 0</div>
 <div id="gameover">GAME OVER<br>Refresh to play again</div>
 <div id="player"></div>
@@ -60,22 +84,66 @@ display:none;
 let player=document.getElementById("player")
 let scoreText=document.getElementById("score")
 let gameOverText=document.getElementById("gameover")
+let menu=document.getElementById("menu")
 
 let playerX=window.innerWidth/2
 let score=0
 let speed=6
-let gameRunning=true
+let spawnRate=800
+let difficultyIncrease=10
+let gameRunning=false
 
 player.style.left=playerX+"px"
+
+function startGame(level){
+
+menu.style.display="none"
+player.style.display="block"
+scoreText.style.display="block"
+
+gameRunning=true
+
+if(level==="easy"){
+spawnRate=800
+difficultyIncrease=10
+}
+
+if(level==="medium"){
+spawnRate=500
+difficultyIncrease=7
+}
+
+if(level==="hard"){
+spawnRate=250
+difficultyIncrease=5
+}
+
+setInterval(spawnEnemy,spawnRate)
+
+}
 
 function moveLeft(){
-playerX-=35
-player.style.left=playerX+"px"
+
+playerX -= 35
+
+if(playerX < 0){
+playerX = 0
+}
+
+player.style.left = playerX + "px"
+
 }
 
 function moveRight(){
-playerX+=35
-player.style.left=playerX+"px"
+
+playerX += 35
+
+if(playerX > window.innerWidth - 40){
+playerX = window.innerWidth - 40
+}
+
+player.style.left = playerX + "px"
+
 }
 
 document.addEventListener("keydown",(e)=>{
@@ -102,7 +170,7 @@ if(!gameRunning) return
 let enemy=document.createElement("div")
 enemy.classList.add("enemy")
 
-enemy.style.left=Math.random()*window.innerWidth+"px"
+enemy.style.left=Math.random()*(window.innerWidth-30)+"px"
 
 document.body.appendChild(enemy)
 
@@ -132,8 +200,8 @@ enemy.remove()
 score++
 scoreText.innerText="Score: "+score
 
-if(score%5===0){
-speed+=5
+if(score%difficultyIncrease===0){
+speed+=2
 }
 
 clearInterval(fall)
@@ -142,8 +210,6 @@ clearInterval(fall)
 },30)
 
 }
-
-setInterval(spawnEnemy,200)
 
 </script>
 
