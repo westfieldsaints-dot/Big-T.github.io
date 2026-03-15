@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My Game</title>
+
+<style>
+body {
+    margin:0;
+    background:black;
+    overflow:hidden;
+}
+
+#player {
+    width:40px;
+    height:40px;
+    background:lime;
+    position:absolute;
+    bottom:20px;
+    left:50%;
+}
+
+.enemy {
+    width:30px;
+    height:30px;
+    background:red;
+    position:absolute;
+    top:0;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="player"></div>
+
+<script>
+
+let player = document.getElementById("player");
+let playerX = window.innerWidth/2;
+
+document.addEventListener("keydown", function(e){
+
+    if(e.key === "ArrowLeft"){
+        playerX -= 20;
+    }
+
+    if(e.key === "ArrowRight"){
+        playerX += 20;
+    }
+
+    player.style.left = playerX + "px";
+
+});
+
+function spawnEnemy(){
+
+    let enemy = document.createElement("div");
+    enemy.classList.add("enemy");
+
+    enemy.style.left = Math.random()*window.innerWidth + "px";
+
+    document.body.appendChild(enemy);
+
+    let y = 0;
+
+    let fall = setInterval(()=>{
+
+        y += 5;
+        enemy.style.top = y + "px";
+
+        if(y > window.innerHeight){
+            enemy.remove();
+            clearInterval(fall);
+        }
+
+    },30);
+
+}
+
+setInterval(spawnEnemy,1000);
+
+</script>
+
+</body>
+</html>
