@@ -2,57 +2,121 @@
 <html>
 <head>
 <title>Fortnight Mode</title>
+
 <style>
-body{margin:0;overflow:hidden;background:black}
-#text{
+body{
+margin:0;
+overflow:hidden;
+background:black;
+}
+
+#crosshair{
 position:absolute;
-top:20px;
-left:20px;
+top:50%;
+left:50%;
+width:20px;
+height:20px;
+margin-left:-10px;
+margin-top:-10px;
+border:2px solid white;
+border-radius:50%;
+}
+
+#info{
+position:absolute;
+top:10px;
+left:10px;
 color:white;
 font-family:Arial;
 }
 </style>
+
 </head>
 
 <body>
 
-<div id="text">3D Mode Loaded</div>
+<div id="crosshair"></div>
+<div id="info">Click screen • WASD move • Mouse look</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
 
-const scene = new THREE.Scene()
+let scene = new THREE.Scene()
 
-const camera = new THREE.PerspectiveCamera(
+let camera = new THREE.PerspectiveCamera(
 75,
 window.innerWidth/window.innerHeight,
 0.1,
 1000
 )
 
-const renderer = new THREE.WebGLRenderer()
-
+let renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
-
 document.body.appendChild(renderer.domElement)
 
-const geometry = new THREE.BoxGeometry()
+let light = new THREE.HemisphereLight(0xffffff,0x444444)
+scene.add(light)
 
-const material = new THREE.MeshBasicMaterial({color:0x00ff00})
+let floorGeometry = new THREE.PlaneGeometry(200,200)
+let floorMaterial = new THREE.MeshBasicMaterial({color:0x333333})
 
-const cube = new THREE.Mesh(geometry,material)
+let floor = new THREE.Mesh(floorGeometry,floorMaterial)
+floor.rotation.x = -Math.PI/2
+scene.add(floor)
 
-scene.add(cube)
+let controls = new THREE.PointerLockControls(camera,document.body)
 
-camera.position.z = 5
+document.body.addEventListener("click",()=>{
+controls.lock()
+})
+
+scene.add(controls.getObject())
+
+camera.position.y = 2
+
+let moveForward=false
+let moveBackward=false
+let moveLeft=false
+let moveRight=false
+
+document.addEventListener("keydown",(e)=>{
+
+if(e.key==="w") moveForward=true
+if(e.key==="s") moveBackward=true
+if(e.key==="a") moveLeft=true
+if(e.key==="d") moveRight=true
+
+})
+
+document.addEventListener("keyup",(e)=>{
+
+if(e.key==="w") moveForward=false
+if(e.key==="s") moveBackward=false
+if(e.key==="a") moveLeft=false
+if(e.key==="d") moveRight=false
+
+})
+
+let enemyGeometry = new THREE.BoxGeometry(2,2,2)
+let enemyMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
+
+let enemy = new THREE.Mesh(enemyGeometry,enemyMaterial)
+enemy.position.set(0,1,-20)
+
+scene.add(enemy)
 
 function animate(){
 
 requestAnimationFrame(animate)
 
-cube.rotation.x += 0.01
-cube.rotation.y += 0.01
+let speed = 0.1
+
+if(moveForward) controls.moveForward(speed)
+if(moveBackward) controls.moveForward(-speed)
+if(moveLeft) controls.moveRight(-speed)
+if(moveRight) controls.moveRight(speed)
 
 renderer.render(scene,camera)
 
