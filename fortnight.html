@@ -1,13 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Fortnight Test</title>
+<title>Fortnight Mode</title>
+<style>
+body{margin:0;overflow:hidden;background:black}
+#text{
+position:absolute;
+top:20px;
+left:20px;
+color:white;
+font-family:Arial;
+}
+</style>
 </head>
 
-<body style="background:black;color:white;font-family:Arial;text-align:center;margin-top:100px;">
+<body>
 
-<h1>Fortnight Mode</h1>
-<p>If you see this, the page works.</p>
+<div id="text">3D Mode Loaded</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+<script>
+
+const scene = new THREE.Scene()
+
+const camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
+
+const renderer = new THREE.WebGLRenderer()
+
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+document.body.appendChild(renderer.domElement)
+
+const geometry = new THREE.BoxGeometry()
+
+const material = new THREE.MeshBasicMaterial({color:0x00ff00})
+
+const cube = new THREE.Mesh(geometry,material)
+
+scene.add(cube)
+
+camera.position.z = 5
+
+function animate(){
+
+requestAnimationFrame(animate)
+
+cube.rotation.x += 0.01
+cube.rotation.y += 0.01
+
+renderer.render(scene,camera)
+
+}
+
+animate()
+
+</script>
 
 </body>
 </html>
