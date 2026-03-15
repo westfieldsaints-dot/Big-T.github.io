@@ -146,6 +146,7 @@ let running=false
 document.addEventListener("keydown",e=>{
 keys[e.key]=true
 if(e.key==="Shift") running=true
+  
 })
 
 document.addEventListener("keyup",e=>{
@@ -159,6 +160,10 @@ if(document.pointerLockElement===document.body){
 
 camera.rotation.y -= event.movementX * 0.002
 camera.rotation.x -= event.movementY * 0.002
+
+// stop camera from flipping underground
+let maxLook = Math.PI / 2.2
+camera.rotation.x = Math.max(-maxLook, Math.min(maxLook, camera.rotation.x))
 
 }
 
