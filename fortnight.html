@@ -36,42 +36,41 @@ font-family:Arial;
 <body>
 
 <div id="crosshair"></div>
-<div id="info">Click screen • WASD move • SHIFT run • Mouse look • Click shoot</div>
+<div id="info">WASD move • SHIFT run • SPACE jump • Mouse look • Click shoot</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
 <script>
 
-let scene = new THREE.Scene()
-scene.background = new THREE.Color(0x87CEEB)
+let scene=new THREE.Scene()
+scene.background=new THREE.Color(0x87CEEB)
 
-let camera = new THREE.PerspectiveCamera(
+let camera=new THREE.PerspectiveCamera(
 75,
 window.innerWidth/window.innerHeight,
 0.1,
 1000
 )
 
-let renderer = new THREE.WebGLRenderer()
+let renderer=new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-let sun = new THREE.DirectionalLight(0xffffff,1)
+let sun=new THREE.DirectionalLight(0xffffff,1)
 sun.position.set(50,100,50)
 scene.add(sun)
 
-let ambient = new THREE.AmbientLight(0xffffff,0.4)
-scene.add(ambient)
+scene.add(new THREE.AmbientLight(0xffffff,0.4))
 
-let groundGeo = new THREE.PlaneGeometry(500,500)
-let groundMat = new THREE.MeshLambertMaterial({color:0x228B22})
+let groundGeo=new THREE.PlaneGeometry(500,500)
+let groundMat=new THREE.MeshLambertMaterial({color:0x228B22})
 
-let ground = new THREE.Mesh(groundGeo,groundMat)
-ground.rotation.x = -Math.PI/2
+let ground=new THREE.Mesh(groundGeo,groundMat)
+ground.rotation.x=-Math.PI/2
 scene.add(ground)
 
-let player = new THREE.Object3D()
-let pitchObject = new THREE.Object3D()
+let player=new THREE.Object3D()
+let pitchObject=new THREE.Object3D()
 
 pitchObject.add(camera)
 player.add(pitchObject)
@@ -80,9 +79,14 @@ scene.add(player)
 
 player.position.set(0,2,10)
 
+let velocityY=0
+let gravity=-0.01
+let canJump=true
+let groundLevel=2
+
 function createHouse(x,z){
 
-let base = new THREE.Mesh(
+let base=new THREE.Mesh(
 new THREE.BoxGeometry(6,4,6),
 new THREE.MeshLambertMaterial({color:0x8B4513})
 )
@@ -90,7 +94,7 @@ new THREE.MeshLambertMaterial({color:0x8B4513})
 base.position.set(x,2,z)
 scene.add(base)
 
-let roof = new THREE.Mesh(
+let roof=new THREE.Mesh(
 new THREE.ConeGeometry(5,3,4),
 new THREE.MeshLambertMaterial({color:0xaa0000})
 )
@@ -114,11 +118,7 @@ new THREE.BoxGeometry(2,2,2),
 new THREE.MeshLambertMaterial({color:0xff0000})
 )
 
-enemy.position.set(
-Math.random()*40-20,
-1,
-Math.random()*-60
-)
+enemy.position.set(Math.random()*40-20,1,Math.random()*-60)
 
 scene.add(enemy)
 enemies.push(enemy)
@@ -138,16 +138,16 @@ new THREE.SphereGeometry(0.2),
 new THREE.MeshBasicMaterial({color:0xffff00})
 )
 
-// direction camera is looking
-let dir = new THREE.Vector3()
+let dir=new THREE.Vector3()
 camera.getWorldDirection(dir)
 
-// spawn bullet slightly in front of camera (like from hands)
-bullet.position.copy(camera.position)
-bullet.position.add(dir.clone().multiplyScalar(1))
-bullet.position.y -= 0.3
+let spawnOffset=new THREE.Vector3(0.4,-0.4,-1.2)
+spawnOffset.applyMatrix4(camera.matrixWorld)
 
-bullet.velocity = dir.clone()
+bullet.position.copy(spawnOffset)
+
+bullet.velocity=dir.clone()
+bullet.life=120
 
 scene.add(bullet)
 bullets.push(bullet)
@@ -158,25 +158,39 @@ let keys={}
 let running=false
 
 document.addEventListener("keydown",e=>{
+
 keys[e.key]=true
-if(e.key==="Shift") running=true
+
+if(e.code==="ShiftLeft"||e.code==="ShiftRight"){
+running=true
+}
+
+if(e.code==="Space" && canJump){
+velocityY=0.25
+canJump=false
+}
+
 })
 
 document.addEventListener("keyup",e=>{
+
 keys[e.key]=false
-if(e.key==="Shift") running=false
+
+if(e.code==="ShiftLeft"||e.code==="ShiftRight"){
+running=false
+}
+
 })
 
 document.addEventListener("mousemove",(event)=>{
 
 if(document.pointerLockElement===document.body){
 
-player.rotation.y -= event.movementX * 0.002
+player.rotation.y-=event.movementX*0.002
+pitchObject.rotation.x-=event.movementY*0.002
 
-pitchObject.rotation.x -= event.movementY * 0.002
-
-let maxLook = Math.PI/2 - 0.1
-pitchObject.rotation.x = Math.max(-maxLook, Math.min(maxLook, pitchObject.rotation.x))
+let maxLook=Math.PI/2-0.1
+pitchObject.rotation.x=Math.max(-maxLook,Math.min(maxLook,pitchObject.rotation.x))
 
 }
 
@@ -186,27 +200,44 @@ function animate(){
 
 requestAnimationFrame(animate)
 
-let speed = running ? 0.45 : 0.2
+let speed=running?0.45:0.2
 
 if(keys["w"]) player.translateZ(-speed)
 if(keys["s"]) player.translateZ(speed)
 if(keys["a"]) player.translateX(-speed)
 if(keys["d"]) player.translateX(speed)
 
-player.position.y = 2
+velocityY+=gravity
+player.position.y+=velocityY
 
-bullets.forEach(b=>{
+if(player.position.y<=groundLevel){
+
+player.position.y=groundLevel
+velocityY=0
+canJump=true
+
+}
+
+bullets.forEach((b,i)=>{
 
 b.position.add(b.velocity.clone().multiplyScalar(0.8))
+b.life--
 
-if(b.position.y < 0) return
+if(b.life<=0){
+scene.remove(b)
+bullets.splice(i,1)
+return
+}
 
-enemies.forEach((enemy,i)=>{
+enemies.forEach((enemy,j)=>{
 
 if(b.position.distanceTo(enemy.position)<1.5){
 
 scene.remove(enemy)
-enemies.splice(i,1)
+enemies.splice(j,1)
+
+scene.remove(b)
+bullets.splice(i,1)
 
 }
 
