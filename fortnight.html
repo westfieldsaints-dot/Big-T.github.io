@@ -7,7 +7,18 @@
 body{
 margin:0;
 overflow:hidden;
-background:black;
+}
+
+#crosshair{
+position:absolute;
+top:50%;
+left:50%;
+width:12px;
+height:12px;
+background:white;
+border-radius:50%;
+margin-left:-6px;
+margin-top:-6px;
 }
 
 #info{
@@ -17,24 +28,14 @@ left:10px;
 color:white;
 font-family:Arial;
 }
-
-#crosshair{
-position:absolute;
-top:50%;
-left:50%;
-width:10px;
-height:10px;
-background:white;
-border-radius:50%;
-}
 </style>
 
 </head>
 
 <body>
 
-<div id="info">WASD move • Mouse look • Click shoot</div>
 <div id="crosshair"></div>
+<div id="info">Click screen • WASD move • Mouse look • Click shoot</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 
@@ -54,8 +55,7 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-camera.position.y = 2
-camera.position.z = 10
+camera.position.set(0,2,10)
 
 let sun = new THREE.DirectionalLight(0xffffff,1)
 sun.position.set(50,100,50)
@@ -92,8 +92,8 @@ scene.add(roof)
 
 }
 
-for(let i=0;i<8;i++){
-createHouse(Math.random()*100-50,Math.random()*-100)
+for(let i=0;i<10;i++){
+createHouse(Math.random()*120-60,Math.random()*-120)
 }
 
 let enemies=[]
@@ -129,7 +129,8 @@ new THREE.MeshBasicMaterial({color:0xffff00})
 
 bullet.position.copy(camera.position)
 
-bullet.velocity=new THREE.Vector3(0,0,-1)
+bullet.velocity=new THREE.Vector3()
+camera.getWorldDirection(bullet.velocity)
 
 scene.add(bullet)
 bullets.push(bullet)
@@ -141,20 +142,27 @@ let keys={}
 document.addEventListener("keydown",e=>keys[e.key]=true)
 document.addEventListener("keyup",e=>keys[e.key]=false)
 
+document.addEventListener("mousemove",(event)=>{
+
+camera.rotation.y -= event.movementX * 0.002
+camera.rotation.x -= event.movementY * 0.002
+
+})
+
 function animate(){
 
 requestAnimationFrame(animate)
 
 let speed=0.2
 
-if(keys["w"]) camera.position.z-=speed
-if(keys["s"]) camera.position.z+=speed
-if(keys["a"]) camera.position.x-=speed
-if(keys["d"]) camera.position.x+=speed
+if(keys["w"]) camera.translateZ(-speed)
+if(keys["s"]) camera.translateZ(speed)
+if(keys["a"]) camera.translateX(-speed)
+if(keys["d"]) camera.translateX(speed)
 
 bullets.forEach(b=>{
 
-b.position.z-=0.8
+b.position.add(b.velocity.clone().multiplyScalar(0.8))
 
 enemies.forEach((enemy,i)=>{
 
