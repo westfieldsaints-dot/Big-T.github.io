@@ -36,10 +36,11 @@ font-family:Arial;
 <body>
 
 <div id="crosshair"></div>
-<div id="info">Click screen • WASD move • Mouse look</div>
+<div id="info">Click screen • WASD move • Click shoot</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
 
@@ -99,24 +100,84 @@ if(e.key==="d") moveRight=false
 
 })
 
-let enemyGeometry = new THREE.BoxGeometry(2,2,2)
-let enemyMaterial = new THREE.MeshBasicMaterial({color:0xff0000})
+let loader = new THREE.GLTFLoader()
 
-let enemy = new THREE.Mesh(enemyGeometry,enemyMaterial)
-enemy.position.set(0,1,-20)
+let enemies=[]
+
+function spawnEnemy(){
+
+loader.load(
+"https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb",
+
+function(gltf){
+
+let enemy = gltf.scene
+
+enemy.scale.set(1,1,1)
+
+enemy.position.set(
+Math.random()*40-20,
+0,
+Math.random()*-40
+)
 
 scene.add(enemy)
+
+enemies.push(enemy)
+
+})
+
+}
+
+setInterval(spawnEnemy,4000)
+
+let bullets=[]
+
+document.addEventListener("mousedown",()=>{
+
+let geo=new THREE.SphereGeometry(0.2)
+let mat=new THREE.MeshBasicMaterial({color:0xffff00})
+
+let bullet=new THREE.Mesh(geo,mat)
+
+bullet.position.copy(camera.position)
+
+bullet.velocity=new THREE.Vector3()
+camera.getWorldDirection(bullet.velocity)
+
+scene.add(bullet)
+
+bullets.push(bullet)
+
+})
 
 function animate(){
 
 requestAnimationFrame(animate)
 
-let speed = 0.1
+let speed=0.15
 
 if(moveForward) controls.moveForward(speed)
 if(moveBackward) controls.moveForward(-speed)
 if(moveLeft) controls.moveRight(-speed)
 if(moveRight) controls.moveRight(speed)
+
+bullets.forEach(b=>{
+
+b.position.add(b.velocity.clone().multiplyScalar(0.6))
+
+enemies.forEach((enemy,index)=>{
+
+if(b.position.distanceTo(enemy.position)<2){
+
+scene.remove(enemy)
+enemies.splice(index,1)
+
+}
+
+})
+
+})
 
 renderer.render(scene,camera)
 
