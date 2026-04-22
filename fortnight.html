@@ -2,358 +2,305 @@
 <html>
 <head>
 <title>Fortnight Mode</title>
-
 <style>
-body{margin:0;overflow:hidden;cursor:none;}
+body { margin:0; overflow:hidden; }
 
-#crosshair{
-position:absolute;top:50%;left:50%;
-width:12px;height:12px;background:white;
-border-radius:50%;margin-left:-6px;margin-top:-6px;
+/* MENU BUTTON */
+#menuBtn {
+  position:absolute;
+  top:10px;
+  left:10px;
+  font-size:25px;
+  color:white;
+  cursor:pointer;
+  z-index:10;
 }
 
-#healthBox{
-position:absolute;bottom:20px;left:20px;
-width:200px;height:20px;background:#333;
+/* MENU PANEL */
+#menu {
+  position:absolute;
+  top:0;
+  left:-250px;
+  width:250px;
+  height:100%;
+  background:#111;
+  color:white;
+  padding:20px;
+  transition:0.3s;
+  font-family:Arial;
+  z-index:9;
 }
 
-#health{height:100%;width:100%;background:red;}
-
-#score{
-position:absolute;top:10px;right:20px;
-color:white;font-family:Arial;font-size:20px;
+#menu a {
+  color:lime;
+  text-decoration:none;
+  display:block;
+  margin:10px 0;
 }
 
-#gameOver{
-position:absolute;top:50%;left:50%;
-transform:translate(-50%,-50%);
-color:white;font-size:40px;
-display:none;
+/* STAMINA */
+#staminaBar {
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  width:200px;
+  height:20px;
+  background:#444;
+}
+#stamina {
+  height:100%;
+  width:100%;
+  background:lime;
+}
+
+/* AMMO */
+#ammo {
+  position:absolute;
+  bottom:20px;
+  right:20px;
+  color:white;
+  font-size:20px;
+  font-family:Arial;
 }
 </style>
 </head>
 
 <body>
 
-<div id="crosshair"></div>
-<div id="healthBox"><div id="health"></div></div>
-<div id="score">Score: 0</div>
-<div id="gameOver">GAME OVER (Refresh)</div>
+<!-- MENU BUTTON -->
+<div id="menuBtn">☰</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<!-- MENU -->
+<div id="menu">
+  <h2>Menu</h2>
+
+  <b>Other Game:</b>
+  <a href="index.html">Play Dodging Game</a>
+
+  <br>
+
+  <b>Controls:</b>
+  <p>
+  WASD = Move<br>
+  SHIFT = Run<br>
+  SPACE = Jump<br>
+  Mouse = Look<br>
+  Click = Shoot<br>
+  R = Reload
+  </p>
+</div>
+
+<div id="staminaBar"><div id="stamina"></div></div>
+<div id="ammo">30 / 90</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
+// MENU TOGGLE
+let menuOpen = false;
+let menu = document.getElementById("menu");
+
+document.getElementById("menuBtn").onclick = () => {
+  menuOpen = !menuOpen;
+
+  if(menuOpen){
+    menu.style.left = "0px";
+  } else {
+    menu.style.left = "-250px";
+  }
+};
 
 // SCENE
-let scene=new THREE.Scene()
-scene.background=new THREE.Color(0x87CEEB)
+let scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,3000)
+// CAMERA
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.y = 2;
 
-let renderer=new THREE.WebGLRenderer()
-renderer.setSize(innerWidth,innerHeight)
-document.body.appendChild(renderer.domElement)
+// RENDER
+let renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// CONTROLS
+let controls = new THREE.PointerLockControls(camera, document.body);
+
+document.body.addEventListener("click", () => {
+  if(!menuOpen) controls.lock(); // don't lock if menu open
+});
 
 // LIGHT
-let sun=new THREE.DirectionalLight(0xffffff,1.2)
-sun.position.set(100,200,100)
-scene.add(sun)
-scene.add(new THREE.AmbientLight(0xffffff,0.4))
+let light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(10,20,10);
+scene.add(light);
 
-// TERRAIN (HILLS)
-let groundGeo=new THREE.PlaneGeometry(1500,1500,100,100)
-let groundMat=new THREE.MeshLambertMaterial({color:0x2e8b57})
-let ground=new THREE.Mesh(groundGeo,groundMat)
-ground.rotation.x=-Math.PI/2
+// GROUND
+let ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(500,500),
+  new THREE.MeshStandardMaterial({color:0x22aa22})
+);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
 
-let pos=ground.geometry.attributes.position
-for(let i=0;i<pos.count;i++){
-pos.setY(i,Math.random()*4)
+// HOUSES
+function house(x,z){
+  let h = new THREE.Mesh(
+    new THREE.BoxGeometry(5,3,5),
+    new THREE.MeshStandardMaterial({color:0x8b4513})
+  );
+  h.position.set(x,1.5,z);
+
+  let roof = new THREE.Mesh(
+    new THREE.ConeGeometry(4,2,4),
+    new THREE.MeshStandardMaterial({color:0xff0000})
+  );
+  roof.position.set(x,4,z);
+  roof.rotation.y = Math.PI/4;
+
+  scene.add(h, roof);
 }
-ground.geometry.computeVertexNormals()
+house(10,-10);
+house(-15,-20);
+house(20,-30);
 
-scene.add(ground)
+// GUN
+let gun = new THREE.Mesh(
+  new THREE.BoxGeometry(0.5,0.3,1),
+  new THREE.MeshStandardMaterial({color:0x333333})
+);
+gun.position.set(0.5,-0.5,-1);
+camera.add(gun);
+scene.add(camera);
 
-// CLOUDS
-function createCloud(){
-let cloud=new THREE.Group()
-for(let i=0;i<5;i++){
-let puff=new THREE.Mesh(
-new THREE.SphereGeometry(5),
-new THREE.MeshLambertMaterial({color:0xffffff})
-)
-puff.position.set(Math.random()*10,Math.random()*3,Math.random()*10)
-cloud.add(puff)
-}
-cloud.position.set(Math.random()*800-400,80+Math.random()*40,Math.random()*-800)
-scene.add(cloud)
-}
-for(let i=0;i<20;i++) createCloud()
+// MOVEMENT
+let move = {f:false,b:false,l:false,r:false,run:false};
+let velocityY = 0;
+let onGround = true;
 
-// PLAYER
-let player=new THREE.Object3D()
-let pitch=new THREE.Object3D()
-pitch.add(camera)
-player.add(pitch)
-scene.add(player)
+// STAMINA
+let stamina = 100;
 
-player.position.set(0,2,10)
-
-let velocityY=0, gravity=-0.01, canJump=true, running=false
-
-// UI
-let health=100, score=0
-function updateUI(){
-document.getElementById("health").style.width=health+"%"
-document.getElementById("score").innerText="Score: "+score
-}
-
-// COLLISION
-let boxColliders=[]
-let circleColliders=[]
-
-function addBox(mesh){
-boxColliders.push(new THREE.Box3().setFromObject(mesh))
-}
-
-function addCircle(mesh,radius){
-circleColliders.push({mesh:mesh,radius:radius})
-}
-
-// OBJECTS
-function createHouse(x,z){
-let h=new THREE.Mesh(
-new THREE.BoxGeometry(8,5,8),
-new THREE.MeshLambertMaterial({color:0x8B4513})
-)
-h.position.set(x,2.5,z)
-scene.add(h)
-addBox(h)
-}
-
-function createTree(x,z){
-
-let trunk=new THREE.Mesh(
-new THREE.CylinderGeometry(0.5,0.5,4),
-new THREE.MeshLambertMaterial({color:0x8b5a2b})
-)
-trunk.position.set(x,2,z)
-scene.add(trunk)
-addBox(trunk)
-
-let leaves=new THREE.Mesh(
-new THREE.SphereGeometry(2),
-new THREE.MeshLambertMaterial({color:0x228b22})
-)
-leaves.position.set(x,5,z)
-scene.add(leaves)
-
-// 🔥 round collision
-addCircle(leaves,2)
-}
-
-function createRock(x,z){
-let r=new THREE.Mesh(
-new THREE.DodecahedronGeometry(2),
-new THREE.MeshLambertMaterial({color:0x777777})
-)
-r.position.set(x,1,z)
-scene.add(r)
-addBox(r)
-}
-
-// SPAWN MAP
-for(let i=0;i<12;i++) createHouse(Math.random()*300-150,Math.random()*-300)
-for(let i=0;i<30;i++) createTree(Math.random()*600-300,Math.random()*-600)
-for(let i=0;i<20;i++) createRock(Math.random()*600-300,Math.random()*-600)
-
-// COLLISION CHECK
-function checkCollision(pos){
-
-for(let b of boxColliders){
-if(b.containsPoint(pos)) return true
-}
-
-for(let c of circleColliders){
-let dx=pos.x-c.mesh.position.x
-let dz=pos.z-c.mesh.position.z
-if(Math.sqrt(dx*dx+dz*dz)<c.radius) return true
-}
-
-return false
-}
-
-// ENEMIES
-let enemies=[], enemyBullets=[]
-
-function spawnEnemy(){
-if(enemies.length>15) return
-
-let e=new THREE.Mesh(
-new THREE.CapsuleGeometry(0.8,2),
-new THREE.MeshLambertMaterial({color:0xff0000})
-)
-
-e.position.set(Math.random()*80-40,1,Math.random()*-120)
-e.cooldown=100
-
-scene.add(e)
-enemies.push(e)
-}
-setInterval(spawnEnemy,3000)
-
-// PLAYER BULLETS
-let bullets=[]
-
-document.addEventListener("click",()=>{
-document.body.requestPointerLock()
-
-if(bullets.length>50) return
-
-let b=new THREE.Mesh(
-new THREE.SphereGeometry(0.2),
-new THREE.MeshBasicMaterial({color:0xffff00})
-)
-
-let dir=new THREE.Vector3()
-camera.getWorldDirection(dir)
-
-let spawn=new THREE.Vector3(0.4,-0.4,-1)
-spawn.applyMatrix4(camera.matrixWorld)
-
-b.position.copy(spawn)
-b.velocity=dir.clone()
-b.life=120
-
-scene.add(b)
-bullets.push(b)
-})
+// AMMO
+let ammo = 30;
+let reserveAmmo = 90;
+let maxAmmo = 30;
+let reloading = false;
 
 // INPUT
-let keys={}
-document.addEventListener("keydown",e=>{
-keys[e.key]=true
-if(e.code==="ShiftLeft") running=true
-if(e.code==="Space"&&canJump){velocityY=0.25;canJump=false}
-})
-document.addEventListener("keyup",e=>{
-keys[e.key]=false
-if(e.code==="ShiftLeft") running=false
-})
+document.addEventListener("keydown", e=>{
+  if(e.key=="w") move.f=true;
+  if(e.key=="s") move.b=true;
+  if(e.key=="a") move.l=true;
+  if(e.key=="d") move.r=true;
+  if(e.key=="Shift") move.run=true;
 
-// LOOK
-document.addEventListener("mousemove",e=>{
-if(document.pointerLockElement===document.body){
-player.rotation.y-=e.movementX*0.002
-pitch.rotation.x-=e.movementY*0.002
-pitch.rotation.x=Math.max(-1.5,Math.min(1.5,pitch.rotation.x))
+  if(e.code==="Space" && onGround){
+    velocityY = 0.15;
+    onGround = false;
+  }
+
+  if(e.key=="r") reload();
+});
+
+document.addEventListener("keyup", e=>{
+  if(e.key=="w") move.f=false;
+  if(e.key=="s") move.b=false;
+  if(e.key=="a") move.l=false;
+  if(e.key=="d") move.r=false;
+  if(e.key=="Shift") move.run=false;
+});
+
+// RELOAD
+function reload(){
+  if(reloading || ammo === maxAmmo || reserveAmmo <= 0) return;
+
+  reloading = true;
+  document.getElementById("ammo").innerText = "Reloading...";
+
+  setTimeout(()=>{
+    let needed = maxAmmo - ammo;
+    let used = Math.min(needed, reserveAmmo);
+
+    ammo += used;
+    reserveAmmo -= used;
+
+    reloading = false;
+  }, 1500);
 }
-})
 
-// GAME LOOP
+// SHOOT
+let bullets = [];
+
+document.addEventListener("click", shoot);
+
+function shoot(){
+  if(menuOpen) return; // can't shoot with menu open
+  if(reloading || ammo <= 0) return;
+
+  ammo--;
+
+  let b = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2),
+    new THREE.MeshBasicMaterial({color:0xffff00})
+  );
+
+  b.position.copy(camera.position);
+
+  let dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+
+  b.velocity = dir.multiplyScalar(1);
+
+  scene.add(b);
+  bullets.push(b);
+}
+
+// LOOP
 function animate(){
-requestAnimationFrame(animate)
+  requestAnimationFrame(animate);
 
-if(health<=0){
-document.getElementById("gameOver").style.display="block"
-return
+  let running = move.run && stamina > 0;
+
+  if(running) stamina -= 0.5;
+  else stamina += 0.3;
+
+  stamina = Math.max(0, Math.min(100, stamina));
+  document.getElementById("stamina").style.width = stamina + "%";
+
+  let speed = running ? 0.15 : 0.08;
+
+  if(move.f) controls.moveForward(speed);
+  if(move.b) controls.moveForward(-speed);
+  if(move.l) controls.moveRight(-speed);
+  if(move.r) controls.moveRight(speed);
+
+  velocityY -= 0.01;
+  camera.position.y += velocityY;
+
+  if(camera.position.y <= 2){
+    camera.position.y = 2;
+    velocityY = 0;
+    onGround = true;
+  }
+
+  bullets.forEach((b,i)=>{
+    b.position.add(b.velocity);
+    if(b.position.length() > 300){
+      scene.remove(b);
+      bullets.splice(i,1);
+    }
+  });
+
+  if(!reloading){
+    document.getElementById("ammo").innerText = ammo + " / " + reserveAmmo;
+  }
+
+  renderer.render(scene, camera);
 }
 
-// movement
-let speed=running?0.45:0.2
-let next=player.position.clone()
-
-if(keys["w"]) next.z-=speed
-if(keys["s"]) next.z+=speed
-if(keys["a"]) next.x-=speed
-if(keys["d"]) next.x+=speed
-
-if(!checkCollision(next)) player.position.copy(next)
-
-// gravity
-velocityY+=gravity
-player.position.y+=velocityY
-
-if(player.position.y<=2){
-player.position.y=2
-velocityY=0
-canJump=true
-}
-
-// bullets
-bullets.forEach((b,i)=>{
-b.position.add(b.velocity.clone())
-b.life--
-
-if(b.life<=0){
-scene.remove(b)
-bullets.splice(i,1)
-return
-}
-
-enemies.forEach((e,j)=>{
-if(b.position.distanceTo(e.position)<1.5){
-scene.remove(e)
-enemies.splice(j,1)
-scene.remove(b)
-bullets.splice(i,1)
-score++
-updateUI()
-}
-})
-})
-
-// enemies
-enemies.forEach(e=>{
-let dir=new THREE.Vector3().subVectors(player.position,e.position).normalize()
-e.position.add(dir.multiplyScalar(0.03))
-
-e.cooldown--
-if(e.cooldown<=0){
-
-if(enemyBullets.length>30) return
-
-let b=new THREE.Mesh(
-new THREE.SphereGeometry(0.2),
-new THREE.MeshBasicMaterial({color:0xff0000})
-)
-
-b.position.copy(e.position)
-b.velocity=dir.clone()
-b.life=150
-
-scene.add(b)
-enemyBullets.push(b)
-
-e.cooldown=100
-}
-})
-
-// enemy bullets
-enemyBullets.forEach((b,i)=>{
-b.position.add(b.velocity.clone().multiplyScalar(0.6))
-b.life--
-
-if(b.life<=0){
-scene.remove(b)
-enemyBullets.splice(i,1)
-return
-}
-
-if(b.position.distanceTo(player.position)<1.5){
-health=Math.max(0,health-10)
-updateUI()
-scene.remove(b)
-enemyBullets.splice(i,1)
-}
-})
-
-renderer.render(scene,camera)
-}
-
-animate()
-updateUI()
-
+animate();
 </script>
 </body>
 </html>
