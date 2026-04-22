@@ -44,24 +44,53 @@ display:none;
 
 <script>
 
+// SCENE
 let scene=new THREE.Scene()
 scene.background=new THREE.Color(0x87CEEB)
 
-let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,2000)
+let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,3000)
+
 let renderer=new THREE.WebGLRenderer()
 renderer.setSize(innerWidth,innerHeight)
 document.body.appendChild(renderer.domElement)
 
-scene.add(new THREE.DirectionalLight(0xffffff,1))
-scene.add(new THREE.AmbientLight(0xffffff,0.5))
+// LIGHT
+let sun=new THREE.DirectionalLight(0xffffff,1.2)
+sun.position.set(100,200,100)
+scene.add(sun)
+scene.add(new THREE.AmbientLight(0xffffff,0.4))
 
-let ground=new THREE.Mesh(
-new THREE.PlaneGeometry(1500,1500),
-new THREE.MeshLambertMaterial({color:0x2e8b57})
-)
+// TERRAIN (HILLS)
+let groundGeo=new THREE.PlaneGeometry(1500,1500,100,100)
+let groundMat=new THREE.MeshLambertMaterial({color:0x2e8b57})
+let ground=new THREE.Mesh(groundGeo,groundMat)
 ground.rotation.x=-Math.PI/2
+
+let pos=ground.geometry.attributes.position
+for(let i=0;i<pos.count;i++){
+pos.setY(i,Math.random()*4)
+}
+ground.geometry.computeVertexNormals()
+
 scene.add(ground)
 
+// CLOUDS
+function createCloud(){
+let cloud=new THREE.Group()
+for(let i=0;i<5;i++){
+let puff=new THREE.Mesh(
+new THREE.SphereGeometry(5),
+new THREE.MeshLambertMaterial({color:0xffffff})
+)
+puff.position.set(Math.random()*10,Math.random()*3,Math.random()*10)
+cloud.add(puff)
+}
+cloud.position.set(Math.random()*800-400,80+Math.random()*40,Math.random()*-800)
+scene.add(cloud)
+}
+for(let i=0;i<20;i++) createCloud()
+
+// PLAYER
 let player=new THREE.Object3D()
 let pitch=new THREE.Object3D()
 pitch.add(camera)
@@ -72,34 +101,90 @@ player.position.set(0,2,10)
 
 let velocityY=0, gravity=-0.01, canJump=true, running=false
 
+// UI
 let health=100, score=0
-
 function updateUI(){
 document.getElementById("health").style.width=health+"%"
 document.getElementById("score").innerText="Score: "+score
 }
 
-let colliders=[]
+// COLLISION
+let boxColliders=[]
+let circleColliders=[]
 
-function addCollider(mesh){
-colliders.push(new THREE.Box3().setFromObject(mesh))
+function addBox(mesh){
+boxColliders.push(new THREE.Box3().setFromObject(mesh))
 }
 
+function addCircle(mesh,radius){
+circleColliders.push({mesh:mesh,radius:radius})
+}
+
+// OBJECTS
 function createHouse(x,z){
-let house=new THREE.Mesh(
+let h=new THREE.Mesh(
 new THREE.BoxGeometry(8,5,8),
 new THREE.MeshLambertMaterial({color:0x8B4513})
 )
-house.position.set(x,2.5,z)
-scene.add(house)
-addCollider(house)
+h.position.set(x,2.5,z)
+scene.add(h)
+addBox(h)
 }
 
-for(let i=0;i<10;i++){
-createHouse(Math.random()*200-100,Math.random()*-200)
+function createTree(x,z){
+
+let trunk=new THREE.Mesh(
+new THREE.CylinderGeometry(0.5,0.5,4),
+new THREE.MeshLambertMaterial({color:0x8b5a2b})
+)
+trunk.position.set(x,2,z)
+scene.add(trunk)
+addBox(trunk)
+
+let leaves=new THREE.Mesh(
+new THREE.SphereGeometry(2),
+new THREE.MeshLambertMaterial({color:0x228b22})
+)
+leaves.position.set(x,5,z)
+scene.add(leaves)
+
+// 🔥 round collision
+addCircle(leaves,2)
 }
 
-let enemies=[], bullets=[], enemyBullets=[]
+function createRock(x,z){
+let r=new THREE.Mesh(
+new THREE.DodecahedronGeometry(2),
+new THREE.MeshLambertMaterial({color:0x777777})
+)
+r.position.set(x,1,z)
+scene.add(r)
+addBox(r)
+}
+
+// SPAWN MAP
+for(let i=0;i<12;i++) createHouse(Math.random()*300-150,Math.random()*-300)
+for(let i=0;i<30;i++) createTree(Math.random()*600-300,Math.random()*-600)
+for(let i=0;i<20;i++) createRock(Math.random()*600-300,Math.random()*-600)
+
+// COLLISION CHECK
+function checkCollision(pos){
+
+for(let b of boxColliders){
+if(b.containsPoint(pos)) return true
+}
+
+for(let c of circleColliders){
+let dx=pos.x-c.mesh.position.x
+let dz=pos.z-c.mesh.position.z
+if(Math.sqrt(dx*dx+dz*dz)<c.radius) return true
+}
+
+return false
+}
+
+// ENEMIES
+let enemies=[], enemyBullets=[]
 
 function spawnEnemy(){
 if(enemies.length>15) return
@@ -115,11 +200,12 @@ e.cooldown=100
 scene.add(e)
 enemies.push(e)
 }
-
 setInterval(spawnEnemy,3000)
 
-document.addEventListener("click",()=>{
+// PLAYER BULLETS
+let bullets=[]
 
+document.addEventListener("click",()=>{
 document.body.requestPointerLock()
 
 if(bullets.length>50) return
@@ -141,22 +227,21 @@ b.life=120
 
 scene.add(b)
 bullets.push(b)
-
 })
 
+// INPUT
 let keys={}
-
 document.addEventListener("keydown",e=>{
 keys[e.key]=true
 if(e.code==="ShiftLeft") running=true
-if(e.code==="Space" && canJump){velocityY=0.25;canJump=false}
+if(e.code==="Space"&&canJump){velocityY=0.25;canJump=false}
 })
-
 document.addEventListener("keyup",e=>{
 keys[e.key]=false
 if(e.code==="ShiftLeft") running=false
 })
 
+// LOOK
 document.addEventListener("mousemove",e=>{
 if(document.pointerLockElement===document.body){
 player.rotation.y-=e.movementX*0.002
@@ -165,13 +250,7 @@ pitch.rotation.x=Math.max(-1.5,Math.min(1.5,pitch.rotation.x))
 }
 })
 
-function checkCollision(pos){
-for(let box of colliders){
-if(box.containsPoint(pos)) return true
-}
-return false
-}
-
+// GAME LOOP
 function animate(){
 requestAnimationFrame(animate)
 
@@ -180,17 +259,18 @@ document.getElementById("gameOver").style.display="block"
 return
 }
 
+// movement
 let speed=running?0.45:0.2
+let next=player.position.clone()
 
-let nextPos=player.position.clone()
+if(keys["w"]) next.z-=speed
+if(keys["s"]) next.z+=speed
+if(keys["a"]) next.x-=speed
+if(keys["d"]) next.x+=speed
 
-if(keys["w"]) nextPos.z-=speed
-if(keys["s"]) nextPos.z+=speed
-if(keys["a"]) nextPos.x-=speed
-if(keys["d"]) nextPos.x+=speed
+if(!checkCollision(next)) player.position.copy(next)
 
-if(!checkCollision(nextPos)) player.position.copy(nextPos)
-
+// gravity
 velocityY+=gravity
 player.position.y+=velocityY
 
@@ -200,8 +280,9 @@ velocityY=0
 canJump=true
 }
 
+// bullets
 bullets.forEach((b,i)=>{
-b.position.add(b.velocity.clone().multiplyScalar(1))
+b.position.add(b.velocity.clone())
 b.life--
 
 if(b.life<=0){
@@ -222,6 +303,7 @@ updateUI()
 })
 })
 
+// enemies
 enemies.forEach(e=>{
 let dir=new THREE.Vector3().subVectors(player.position,e.position).normalize()
 e.position.add(dir.multiplyScalar(0.03))
@@ -247,6 +329,7 @@ e.cooldown=100
 }
 })
 
+// enemy bullets
 enemyBullets.forEach((b,i)=>{
 b.position.add(b.velocity.clone().multiplyScalar(0.6))
 b.life--
