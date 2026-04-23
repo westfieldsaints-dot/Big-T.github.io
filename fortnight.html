@@ -1,285 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Fortnight Mode</title>
-
-<style>
-body { margin:0; overflow:hidden; font-family:Arial; }
-
-#crosshair {
-  position:absolute;
-  top:50%; left:50%;
-  width:8px; height:8px;
-  background:white;
-  border-radius:50%;
-  transform:translate(-50%,-50%);
-}
-
-#bars {
-  position:absolute;
-  bottom:20px;
-  left:20px;
-  width:200px;
-}
-.barContainer {
-  height:18px;
-  background:#333;
-  margin-bottom:6px;
-}
-#healthBar { height:100%; width:100%; background:red; }
-#staminaBar { height:100%; width:100%; background:lime; }
-
-#ammo {
-  position:absolute;
-  bottom:20px;
-  right:20px;
-  color:white;
-}
-
-#hit {
-  position:absolute;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  color:red;
-  font-size:30px;
-  display:none;
-}
-</style>
+  <title>Neon Drift 3D</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial;
+    }
+  </style>
 </head>
-
 <body>
 
-<div id="crosshair"></div>
-
-<div id="bars">
-  <div class="barContainer"><div id="healthBar"></div></div>
-  <div class="barContainer"><div id="staminaBar"></div></div>
+<div id="ui">
+  Score: <span id="score">0</span>
 </div>
 
-<div id="ammo"></div>
-<div id="hit">✖</div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
 <script>
+let scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x000000, 10, 60);
 
-// SCENE
-let scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87CEEB);
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+camera.position.set(0, 5, 10);
 
-// CAMERA
-let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.05,2000);
-
-// RENDER
-let renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
+let renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// LIGHT
-scene.add(new THREE.AmbientLight(0xffffff,0.5));
-let sun=new THREE.DirectionalLight(0xffffff,1);
-sun.position.set(50,100,50);
-scene.add(sun);
+// LIGHTS
+let light = new THREE.PointLight(0xffffff, 2, 100);
+light.position.set(0, 10, 10);
+scene.add(light);
 
-// FLOOR (FIXED)
-let ground=new THREE.Mesh(
-  new THREE.BoxGeometry(600,5,600),
-  new THREE.MeshStandardMaterial({color:0x2e8b57})
-);
-ground.position.y=-2.5;
-scene.add(ground);
+// ROAD
+let roadGeo = new THREE.PlaneGeometry(10, 200);
+let roadMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+let road = new THREE.Mesh(roadGeo, roadMat);
+road.rotation.x = -Math.PI / 2;
+scene.add(road);
 
-// PLAYER
-let player=new THREE.Object3D();
-scene.add(player);
-player.position.set(0,2,10);
-player.add(camera);
+// PLAYER CAR
+let carGeo = new THREE.BoxGeometry(1, 1, 2);
+let carMat = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+let car = new THREE.Mesh(carGeo, carMat);
+car.position.y = 0.5;
+scene.add(car);
 
-// PISTOL (back)
-let gun=new THREE.Mesh(
-  new THREE.BoxGeometry(0.3,0.2,1),
-  new THREE.MeshStandardMaterial({color:0x333333})
-);
-gun.position.set(0.4,-0.3,-1);
-camera.add(gun);
+// OBSTACLES
+let obstacles = [];
 
-// INPUT
-let keys={};
-document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+function spawnObstacle() {
+  let geo = new THREE.BoxGeometry(1, 1, 2);
+  let mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+  let obs = new THREE.Mesh(geo, mat);
 
-// POINTER LOCK
-document.body.onclick=()=>document.body.requestPointerLock();
-
-// LOOK
-document.addEventListener("mousemove",e=>{
-  if(document.pointerLockElement===document.body){
-    player.rotation.y-=e.movementX*0.002;
-    camera.rotation.x-=e.movementY*0.002;
-    camera.rotation.x=Math.max(-1.5,Math.min(1.5,camera.rotation.x));
-  }
-});
-
-// STATS
-let stamina=100, health=100, ammo=12;
-
-// MOVE
-function move(){
-  let running=keys["shift"] && stamina>0;
-  let speed=running?0.2:0.1;
-
-  if(running) stamina-=0.5;
-  else stamina=Math.min(100, stamina+0.3);
-
-  let forward=new THREE.Vector3();
-  player.getWorldDirection(forward);
-  forward.y=0;
-
-  let right=new THREE.Vector3();
-  right.crossVectors(forward,new THREE.Vector3(0,1,0));
-
-  if(keys["w"]) player.position.addScaledVector(forward,speed);
-  if(keys["s"]) player.position.addScaledVector(forward,-speed);
-  if(keys["a"]) player.position.addScaledVector(right,speed);
-  if(keys["d"]) player.position.addScaledVector(right,-speed);
+  obs.position.set((Math.random() - 0.5) * 6, 0.5, -50);
+  scene.add(obs);
+  obstacles.push(obs);
 }
 
-// SHOOT (PISTOL)
-let bullets=[], enemyBullets=[], enemies=[];
+setInterval(spawnObstacle, 1000);
 
-document.addEventListener("click",()=>{
-  if(ammo<=0) return;
-  ammo--;
+// CONTROLS
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-  let b=new THREE.Mesh(
-    new THREE.SphereGeometry(0.1),
-    new THREE.MeshBasicMaterial({color:0xffff00})
-  );
+// GAME LOOP
+let speed = 0.5;
+let score = 0;
 
-  b.position.copy(camera.getWorldPosition(new THREE.Vector3()));
-
-  let dir=new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  b.velocity=dir.multiplyScalar(1.5);
-
-  scene.add(b);
-  bullets.push(b);
-});
-
-// ENEMIES
-function spawnEnemy(){
-  let e=new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.5,2),
-    new THREE.MeshStandardMaterial({color:0xff0000})
-  );
-  e.position.set(Math.random()*100-50,2,Math.random()*-100);
-  e.cooldown=0;
-  scene.add(e);
-  enemies.push(e);
-}
-for(let i=0;i<10;i++) spawnEnemy();
-
-// 🌍 WORLD BACK
-for(let i=0;i<25;i++){
-  let t=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.5,0.5,4),
-    new THREE.MeshStandardMaterial({color:0x8b5a2b})
-  );
-  t.position.set(Math.random()*200-100,2,Math.random()*-200);
-
-  let l=new THREE.Mesh(
-    new THREE.SphereGeometry(2),
-    new THREE.MeshStandardMaterial({color:0x228b22})
-  );
-  l.position.set(t.position.x,5,t.position.z);
-
-  scene.add(t,l);
-}
-
-for(let i=0;i<20;i++){
-  let b=new THREE.Mesh(
-    new THREE.SphereGeometry(1.5),
-    new THREE.MeshStandardMaterial({color:0x2ecc71})
-  );
-  b.position.set(Math.random()*200-100,1.5,Math.random()*-200);
-  scene.add(b);
-}
-
-for(let i=0;i<10;i++){
-  let base=new THREE.Mesh(
-    new THREE.BoxGeometry(6,4,6),
-    new THREE.MeshStandardMaterial({color:0x8b5a2b})
-  );
-  base.position.set(Math.random()*200-100,2,Math.random()*-200);
-
-  let roof=new THREE.Mesh(
-    new THREE.ConeGeometry(5,3,4),
-    new THREE.MeshStandardMaterial({color:0xaa0000})
-  );
-  roof.position.set(base.position.x,5,base.position.z);
-  roof.rotation.y=Math.PI/4;
-
-  scene.add(base,roof);
-}
-
-// LOOP
-function animate(){
+function animate() {
   requestAnimationFrame(animate);
 
-  move();
+  // movement
+  if (keys["ArrowLeft"]) car.position.x -= 0.2;
+  if (keys["ArrowRight"]) car.position.x += 0.2;
 
-  // bullets
-  bullets.forEach((b,i)=>{
-    b.position.add(b.velocity);
+  // move obstacles
+  obstacles.forEach(o => {
+    o.position.z += speed;
 
-    enemies.forEach((e,ei)=>{
-      if(b.position.distanceTo(e.position)<1){
-        scene.remove(e);
-        enemies.splice(ei,1);
-
-        hit.style.display="block";
-        setTimeout(()=>hit.style.display="none",100);
-      }
-    });
-  });
-
-  // enemy AI
-  enemies.forEach(e=>{
-    let dir=player.position.clone().sub(e.position).normalize();
-    e.position.add(dir.multiplyScalar(0.05));
-
-    e.cooldown--;
-    if(e.cooldown<=0){
-      let b=new THREE.Mesh(
-        new THREE.SphereGeometry(0.1),
-        new THREE.MeshBasicMaterial({color:0xff0000})
-      );
-      b.position.copy(e.position);
-      b.velocity=dir.multiplyScalar(0.7);
-      scene.add(b);
-      enemyBullets.push(b);
-      e.cooldown=100;
+    // collision
+    if (
+      Math.abs(o.position.x - car.position.x) < 1 &&
+      Math.abs(o.position.z - car.position.z) < 1
+    ) {
+      alert("Game Over! Score: " + score);
+      location.reload();
     }
   });
 
-  // enemy bullets hit player
-  enemyBullets.forEach((b,i)=>{
-    b.position.add(b.velocity);
-    if(b.position.distanceTo(player.position)<1){
-      health-=5;
-      scene.remove(b);
-    }
-  });
+  // remove old obstacles
+  obstacles = obstacles.filter(o => o.position.z < 10);
 
-  // UI
-  healthBar.style.width=health+"%";
-  staminaBar.style.width=stamina+"%";
-  ammo.innerText="Ammo: "+ammo;
+  score++;
+  document.getElementById("score").textContent = score;
 
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
+
 animate();
 
+// resize fix
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
+
 </body>
 </html>
