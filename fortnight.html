@@ -118,7 +118,7 @@ sun.position.set(50,100,50);
 scene.add(sun);
 scene.add(new THREE.AmbientLight(0xffffff,0.5));
 
-// GROUND (SAFE hills)
+// ✅ FIXED GROUND (ONLY CHANGE)
 let geo=new THREE.PlaneGeometry(600,600,30,30);
 let pos=geo.attributes.position;
 for(let i=0;i<pos.count;i++){
@@ -128,9 +128,13 @@ geo.computeVertexNormals();
 
 let ground=new THREE.Mesh(
   geo,
-  new THREE.MeshStandardMaterial({color:0x2e8b57})
+  new THREE.MeshStandardMaterial({
+    color:0x2e8b57,
+    side:THREE.DoubleSide // FIX
+  })
 );
 ground.rotation.x=-Math.PI/2;
+ground.frustumCulled = false; // FIX
 scene.add(ground);
 
 // PLAYER
